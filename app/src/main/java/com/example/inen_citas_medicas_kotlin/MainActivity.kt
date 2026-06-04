@@ -298,7 +298,10 @@ class MainActivity : AppCompatActivity() {
             if (notification.enviada != true) {
                 secondaryButton("Marcar como leida") {
                     ApiClient.service.marcarNotificacionLeida(notification.id).enqueueResult(
-                        onSuccess = { toast("Notificacion marcada como leida.") },
+                        onSuccess = {
+                            toast("Notificacion marcada como leida.")
+                            showNotificaciones()
+                                    },
                         onError = { toast(it) }
                     )
                 }
