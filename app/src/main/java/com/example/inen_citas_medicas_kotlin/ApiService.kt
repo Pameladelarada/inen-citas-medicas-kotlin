@@ -7,6 +7,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface ApiService {
+    // Paciente
     @POST("api/mobile/login/")
     fun login(@Body request: LoginRequest): Call<AuthResponse>
 
@@ -27,5 +28,14 @@ interface ApiService {
 
     @POST("api/mobile/notificaciones/{id}/leida/")
     fun marcarNotificacionLeida(@Path("id") id: Int): Call<NotificacionesResponse>
-}
 
+    // Médico
+    @POST("api/mobile/medico/login/")
+    fun medicoLogin(@Body request: MedicoLoginRequest): Call<MedicoAuthResponse>
+
+    @GET("api/mobile/medico/citas/")
+    fun medicoCitas(): Call<MedicoCitasResponse>
+
+    @POST("api/mobile/medico/citas/{pk}/gestionar/")
+    fun gestionarCita(@Path("pk") pk: Int, @Body request: GestionarCitaRequest): Call<SimpleResponse>
+}
