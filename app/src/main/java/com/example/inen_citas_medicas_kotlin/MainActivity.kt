@@ -20,8 +20,13 @@ import retrofit2.Response
 class MainActivity : AppCompatActivity() {
 
     private lateinit var container: LinearLayout
+    private lateinit var bottomNav: LinearLayout
     private var activeParent: LinearLayout? = null
     private var pacienteNombre: String = "Paciente"
+    private var pacienteDni: String = "-"
+    private var pacienteEmail: String = "-"
+    private var pacienteEdad: String = "-"
+    private var pacienteUsername: String = "-"
     private var medicoNombre: String = "Médico"
     private var medicoEspecialidad: String = ""
 
@@ -43,6 +48,7 @@ class MainActivity : AppCompatActivity() {
             insets
         }
         container = findViewById(R.id.contentContainer)
+        bottomNav = findViewById(R.id.bottomNav)
         showLogin()
     }
 
@@ -50,6 +56,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showLogin() {
         clearScreen()
+        hideBottomNav()
         header("INEN", "Citas Médicas", "Selecciona tu tipo de acceso")
 
         // Tabs
@@ -87,6 +94,10 @@ class MainActivity : AppCompatActivity() {
                     onSuccess = { response ->
                         if (response.ok) {
                             pacienteNombre = response.user?.nombre?.takeIf { it.isNotBlank() } ?: user
+                            pacienteUsername = response.user?.username ?: "-"
+                            pacienteDni = response.user?.dni ?: "-"
+                            pacienteEmail = response.user?.email ?: "-"
+                            pacienteEdad = response.user?.edad?.toString() ?: "-"
                             showHomePaciente()
                         } else { showLogin(); toast(response.error ?: "Error al iniciar sesión.") }
                     },
@@ -138,6 +149,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showRegister() {
         clearScreen()
+        hideBottomNav()
         title("Registro de paciente")
         subtitle("Crea tu cuenta para solicitar y consultar citas.")
         val username = input("Usuario", "ej: jperez")
@@ -161,7 +173,14 @@ class MainActivity : AppCompatActivity() {
                 telefono.text.toString().trim()
             )).enqueueResult(
                 onSuccess = { response ->
-                    if (response.ok) { pacienteNombre = response.user?.nombre?.takeIf { it.isNotBlank() } ?: username.text.toString(); showHomePaciente() }
+                    if (response.ok) {
+                        pacienteNombre = response.user?.nombre?.takeIf { it.isNotBlank() } ?: username.text.toString()
+                        pacienteUsername = response.user?.username ?: "-"
+                        pacienteDni = response.user?.dni ?: "-"
+                        pacienteEmail = response.user?.email ?: "-"
+                        pacienteEdad = response.user?.edad?.toString() ?: "-"
+                        showHomePaciente()
+                    }
                     else { showRegister(); toast(response.error ?: "No se pudo registrar.") }
                 },
                 onError = { showRegister(); toast(it) }
@@ -173,11 +192,77 @@ class MainActivity : AppCompatActivity() {
     private fun showHomePaciente() {
         clearScreen()
         header("INEN", "Hola, $pacienteNombre", "Gestiona tus citas médicas")
-        card { label("Que puedes hacer", bold = true, size = 18); small("Solicita una cita con triaje IA, revisa el estado de tus atenciones y consulta tus notificaciones.") }
+        card { label("¿Qué puedes hacer?", bold = true, size = 18); small("Solicita una cita con triaje IA y revisa el estado de tus atenciones.") }
         primaryButton("Solicitar cita") { showSolicitarCita() }
         primaryButton("Ver mis citas") { showMisCitas() }
-        primaryButton("Notificaciones") { showNotificaciones() }
-        secondaryButton("Cerrar sesión") { showLogin() }
+        renderBottomNav("inicio")
+    }
+
+    private fun showPerfil() {
+        clearScreen()
+        header("INEN", pacienteNombre, "Mi perfil")
+        card {
+            label("Datos personales", bold = true, size = 18)
+            small("Usuario: $pacienteUsername")
+            small("DNI: $pacienteDni")
+            small("Correo: $pacienteEmail")
+            small("Edad: $pacienteEdad años")
+        }
+        label("Notificaciones", bold = true, size = 16, color = navy)
+        loadingInline("Cargando notificaciones...")
+        ApiClient.service.notificaciones().enqueueResult(
+            onSuccess = { response ->
+                clearScreen()
+                header("INEN", pacienteNombre, "Mi perfil")
+                card {
+                    label("Datos personales", bold = true, size = 18)
+                    small("Usuario: $pacienteUsername")
+                    small("DNI: $pacienteDni")
+                    small("Correo: $pacienteEmail")
+                    small("Edad: $pacienteEdad años")
+                }
+                label("Notificaciones", bold = true, size = 16, color = navy)
+                if (response.ok && !response.notificaciones.isNullOrEmpty()) {
+                    response.notificaciones.forEach { notificationCard(it) }
+                } else {
+                    card { small("No tienes notificaciones.") }
+                }
+                secondaryButton("Cerrar sesión") { hideBottomNav(); showLogin() }
+                renderBottomNav("perfil")
+            },
+            onError = {
+                card { small(it) }
+                secondaryButton("Cerrar sesión") { hideBottomNav(); showLogin() }
+                renderBottomNav("perfil")
+            }
+        )
+        renderBottomNav("perfil")
+    }
+
+    private fun renderBottomNav(active: String) {
+        bottomNav.visibility = View.VISIBLE
+        bottomNav.removeAllViews()
+        bottomNav.addView(navItem("🏠", "Inicio", active == "inicio") { showHomePaciente() })
+        bottomNav.addView(navItem("👤", "Perfil", active == "perfil") { showPerfil() })
+    }
+
+    private fun navItem(emoji: String, text: String, active: Boolean, action: () -> Unit): LinearLayout {
+        val color = if (active) blue else grayText
+        val item = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = android.view.Gravity.CENTER
+            setPadding(dp(8), dp(10), dp(8), dp(10))
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            isClickable = true
+            setOnClickListener { action() }
+        }
+        item.addView(TextView(this).apply { this.text = emoji; textSize = 20f; gravity = android.view.Gravity.CENTER })
+        item.addView(TextView(this).apply { this.text = text; textSize = 12f; setTextColor(color); gravity = android.view.Gravity.CENTER; if (active) setTypeface(typeface, Typeface.BOLD) })
+        return item
+    }
+
+    private fun hideBottomNav() {
+        bottomNav.visibility = View.GONE
     }
 
     private fun showSolicitarCita() {
@@ -268,6 +353,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showHomeMedico() {
         clearScreen()
+        hideBottomNav()
         header("INEN", "Dr. $medicoNombre", medicoEspecialidad)
         loadingInline("Cargando citas...")
         ApiClient.service.medicoCitas().enqueueResult(
