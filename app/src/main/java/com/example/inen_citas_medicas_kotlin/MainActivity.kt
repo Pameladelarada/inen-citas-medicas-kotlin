@@ -54,6 +54,30 @@ class MainActivity : AppCompatActivity() {
 
     // ─── LOGIN MULTI-ROL ─────────────────────────────────────────────────────
 
+    /**
+     * Cierra la sesion de verdad: borra la cookie y los datos en pantalla.
+     *
+     * Antes los botones de "Cerrar sesion" solo llamaban a showLogin(), que
+     * cambia de pantalla pero deja viva la cookie de sesion y los datos del
+     * paciente anterior en memoria. En un dispositivo compartido, como los de
+     * un hospital, eso permitia que la siguiente persona siguiera actuando con
+     * la sesion de la anterior.
+     */
+    private fun cerrarSesion() {
+        ApiClient.clearSession()
+
+        pacienteNombre = "Paciente"
+        pacienteDni = "-"
+        pacienteEmail = "-"
+        pacienteEdad = "-"
+        pacienteUsername = "-"
+        medicoNombre = "Médico"
+        medicoEspecialidad = ""
+
+        hideBottomNav()
+        showLogin()
+    }
+
     private fun showLogin() {
         clearScreen()
         hideBottomNav()
@@ -227,12 +251,12 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     card { small("No tienes notificaciones.") }
                 }
-                secondaryButton("Cerrar sesión") { hideBottomNav(); showLogin() }
+                secondaryButton("Cerrar sesión") { cerrarSesion() }
                 renderBottomNav("perfil")
             },
             onError = {
                 card { small(it) }
-                secondaryButton("Cerrar sesión") { hideBottomNav(); showLogin() }
+                secondaryButton("Cerrar sesión") { cerrarSesion() }
                 renderBottomNav("perfil")
             }
         )
@@ -377,9 +401,9 @@ class MainActivity : AppCompatActivity() {
                     label("Historial", bold = true, size = 16, color = grayText)
                     response.historial.forEach { citaMedicoCard(it, esHistorial = true) }
                 }
-                secondaryButton("Cerrar sesión") { showLogin() }
+                secondaryButton("Cerrar sesión") { cerrarSesion() }
             },
-            onError = { clearScreen(); header("INEN", "Dr. $medicoNombre", medicoEspecialidad); card { small(it) }; secondaryButton("Cerrar sesión") { showLogin() } }
+            onError = { clearScreen(); header("INEN", "Dr. $medicoNombre", medicoEspecialidad); card { small(it) }; secondaryButton("Cerrar sesión") { cerrarSesion() } }
         )
     }
 

@@ -20,8 +20,20 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Necesario para leer BuildConfig.DEBUG desde el codigo. Desde AGP 8 la
+    // generacion de BuildConfig esta desactivada por defecto.
+    buildFeatures {
+        buildConfig = true
+    }
+
     buildTypes {
         release {
+            // Sigue en false a proposito. Activar R8 sin reglas de conservacion
+            // romperia Gson: ofusca los nombres de campo de los data class, y
+            // Gson mapea el JSON por nombre, asi que todos los campos llegarian
+            // nulos solo en release. Antes de activarlo hay que escribir las
+            // reglas en proguard-rules.pro y probar un APK de release en un
+            // dispositivo. Ver el README.
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
