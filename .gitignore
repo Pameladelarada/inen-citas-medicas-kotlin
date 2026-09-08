@@ -13,3 +13,13 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Configuracion local de Android Studio / IntelliJ.
+# Es especifica de cada maquina: rutas del SDK, dispositivo seleccionado,
+# estado de las pestañas del editor. No pertenece al repositorio.
+.idea/
+
+# Archivos de compilacion
+build/
+*.apk
+*.aab
